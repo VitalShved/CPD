@@ -28,21 +28,21 @@ file.close()
 
 newsletter = set()
 
-# '''Поиск по исполнителю'''
-# for i in range(1, len(doc.tables)):
-#     for j in range(1, len(doc.tables[i].rows)):
-#         newsletter.add(doc.tables[i].rows[j].cells[3].text)
-#
-# '''Поиск по контролирующему'''
-# for i in range(1, len(doc.tables)):
-#     for j in range(1, len(doc.tables[i].rows)):
-#         newsletter.add(doc.tables[i].rows[j].cells[4].text)
-#
-# '''Рассылка документа причастным'''
-# for name in newsletter:
-#     for key, value in contacts.items():
-#         if name == key:
-#             print(f'Отправить файл {doc} на почту {value}')
+'''Поиск по исполнителю'''
+for i in range(1, len(doc.tables)):
+    for j in range(1, len(doc.tables[i].rows)):
+        newsletter.add(doc.tables[i].rows[j].cells[3].text)
+
+'''Поиск по контролирующему'''
+for i in range(1, len(doc.tables)):
+    for j in range(1, len(doc.tables[i].rows)):
+        newsletter.add(doc.tables[i].rows[j].cells[4].text)
+
+'''Рассылка документа причастным'''
+for name in newsletter:
+    for key, value in contacts.items():
+        if name == key:
+            print(f'Отправить файл {doc} на почту {value}')
 
 '''Поиск по дате исполнения и повторная рассылка приорететных задач'''
 for i in range(1, len(doc.tables)):
@@ -69,13 +69,11 @@ for i in range(1, len(doc.tables)):
             for key, value in contacts.items():
                 if plan[4] == key:
                     print(f'Отправить {plan} на почту {value}')
-                    # КАК ТУТ СДЕЛАТЬ, ЧТОБЫ НЕ ОТПРАВЛЯЛСЯ ФАЙЙЛ НЕСКОЛЬКО РАЗ ОДНОМУ И ТОМУ ЖЕ ЧЕЛОВЕКУ В ЧАСТНОСТИ КОНТРОЛИРУЮЩЕМУ
         elif day < new_date:
             plan = []
             for text in range(5):
                 plan.append(doc.tables[i].rows[j].cells[text].text)
-                print(f'Отправить {plan} на почту {contacts.get('Секретарь')}')
-                # ПОЧЕМУ НЕ РАБОТАЕТ МЕТОД GET???
+            print(f'Отправить {plan} на почту {contacts.get("Секретарь")}')
 
 
 
