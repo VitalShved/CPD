@@ -1,7 +1,7 @@
 # Control of performance discipline
 
 from docx import Document
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 
 contacts = {
@@ -47,11 +47,11 @@ for name in newsletter:
 '''Поиск по дате исполнения и повторная рассылка приорететных задач'''
 for i in range(1, len(doc.tables)):
     for j in range(1, len(doc.tables[i].rows)):
-        day = doc.tables[i].rows[j].cells[2].text
+        day = datetime.strptime(doc.tables[i].rows[j].cells[2].text, '%d.%m.%Y').date()
         date_today = date.today()
-        new_date = (date_today.strftime('%d.%m.%Y'))
-        new_date1 = (date_today + timedelta(days=3)).strftime('%d.%m.%Y')
-        new_date2 = (date_today + timedelta(days=1)).strftime('%d.%m.%Y')
+        new_date = date_today
+        new_date1 = date_today + timedelta(days=3)
+        new_date2 = date_today + timedelta(days=1)
         if day == new_date1:
             plan = []
             for text in range(5):
