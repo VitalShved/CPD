@@ -1,7 +1,17 @@
 # Control of performance discipline
 
+import os
 from docx import Document
 from datetime import date, timedelta, datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
+from email import encoders
+from email.mime.base import MIMEBase
+import mimetypes
+from email.mime.image import MIMEImage
+from email.mime.audio import MIMEAudio
+
 
 
 contacts = {
@@ -25,6 +35,12 @@ contacts = {
 file = open('events.docx', 'rb')
 doc = Document(file)
 file.close()
+msg = MIMEMultipart()
+password = "your_password"
+msg['From'] = 'tch10_tch@gomel.rw'
+msg['Subject'] = 'Events'
+filepath = "events.docx"
+filename = os.path.basename(filepath)
 
 newsletter = set()
 
@@ -42,7 +58,38 @@ for i in range(1, len(doc.tables)):
 for name in newsletter:
     for key, value in contacts.items():
         if name == key:
-            print(f'Отправить файл {doc} на почту {value}')
+            if os.path.isfile(filepath):
+                ctype, encoding = mimetypes.guess_type(filepath)
+                if ctype is None or encoding is not None:
+                    ctype = 'application/octet-stream'
+                maintype, subtype = ctype.split('/', 1)
+                if maintype == 'text':
+                    with open(filepath) as fp:
+                        file = MIMEText(fp.read(), _subtype=subtype)
+                        fp.close()
+                elif maintype == 'image':
+                    with open(filepath, 'rb') as fp:
+                        file = MIMEImage(fp.read(), _subtype=subtype)
+                        fp.close()
+                elif maintype == 'audio':
+                    with open(filepath, 'rb') as fp:
+                        file = MIMEAudio(fp.read(), _subtype=subtype)
+                        fp.close()
+                else:
+                    with open(filepath, 'rb') as fp:
+                        file = MIMEBase(maintype, subtype)
+                        file.set_payload(fp.read())
+                        fp.close()
+                    encoders.encode_base64(file)
+                file.add_header('Content-Disposition', 'attachment', filename=filename)
+                msg.attach(file)
+                msg['To'] = value
+                server = smtplib.SMTP('smtp.gmail.com: 587')  # Создаем объект SMTP
+                server.starttls()
+                server.login(msg['From'], password)
+                server.sendmail(msg['From'], msg['To'], msg.as_string())
+                server.quit()
+            print(f'Файл {doc}, успешно отправлен на электронную почту {value}')
 
 '''Поиск по дате исполнения и повторная рассылка приорететных задач'''
 for i in range(1, len(doc.tables)):
@@ -58,6 +105,13 @@ for i in range(1, len(doc.tables)):
                 plan.append(doc.tables[i].rows[j].cells[text].text)
             for key, value in contacts.items():
                 if plan[3] == key:
+                    msg['To'] = value
+                    msg.attach(MIMEText(' / '.join(plan)))
+                    server = smtplib.SMTP('smtp.gmail.com: 587')
+                    server.starttls()
+                    server.login(msg['From'], password)
+                    server.sendmail(msg['From'], msg['To'], msg.as_string())
+                    server.quit()
                     print(f'Отправить {plan} на почту {value}')
         elif day == new_date2:
             plan = []
@@ -65,17 +119,36 @@ for i in range(1, len(doc.tables)):
                 plan.append(doc.tables[i].rows[j].cells[text].text)
             for key, value in contacts.items():
                 if plan[3] == key:
+                    msg['To'] = value
+                    msg.attach(MIMEText(' / '.join(plan)))
+                    server = smtplib.SMTP('smtp.gmail.com: 587')
+                    server.starttls()
+                    server.login(msg['From'], password)
+                    server.sendmail(msg['From'], msg['To'], msg.as_string())
+                    server.quit()
                     print(f'Отправить {plan} на почту {value}')
             for key, value in contacts.items():
                 if plan[4] == key:
+                    msg['To'] = value
+                    msg.attach(MIMEText(' / '.join(plan)))
+                    server = smtplib.SMTP('smtp.gmail.com: 587')
+                    server.starttls()
+                    server.login(msg['From'], password)
+                    server.sendmail(msg['From'], msg['To'], msg.as_string())
+                    server.quit()
                     print(f'Отправить {plan} на почту {value}')
         elif day < new_date:
             plan = []
             for text in range(5):
                 plan.append(doc.tables[i].rows[j].cells[text].text)
+            msg['To'] = contacts.get("Секретарь")
+            msg.attach(MIMEText(' / '.join(plan)))
+            server = smtplib.SMTP('smtp.gmail.com: 587')
+            server.starttls()
+            server.login(msg['From'], password)
+            server.sendmail(msg['From'], msg['To'], msg.as_string())
+            server.quit()
             print(f'Отправить {plan} на почту {contacts.get("Секретарь")}')
-
-
 
 
 
