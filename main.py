@@ -1,16 +1,13 @@
 # Control of performance discipline
 
-import os
 from docx import Document
 from datetime import date, timedelta, datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import smtplib
+import os
 from email import encoders
 from email.mime.base import MIMEBase
-import mimetypes
-from email.mime.image import MIMEImage
-from email.mime.audio import MIMEAudio
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 
@@ -32,126 +29,144 @@ contacts = {
     'Секретарь':'tch10_tch@gomel.rw'
 }
 
-file = open('events.docx', 'rb')
-doc = Document(file)
-file.close()
-msg = MIMEMultipart()
-password = "your_password"
-msg['From'] = 'tch10_tch@gomel.rw'
-msg['Subject'] = 'Events'
-filepath = "events.docx"
-filename = os.path.basename(filepath)
-newsletter = set()
 
-class SearchColumn:
+class Parser:
 
-    def columns(self, column):
-        self.column = column
-        '''Поиск по столбцу'''
-        for i in range(1, len(doc.tables)):
-            for j in range(1, len(doc.tables[i].rows)):
-                newsletter.add(doc.tables[i].rows[j].cells[self.column].text)
-        return newsletter
+    def __init__(self, filename):
+        self.filename = filename
 
-class SendDocument:
+    def process(self):
+        result = {}
+        content = []
+        with open(self.filename, 'rb') as file:
+            doc = Document(file)
+            for i in range(1, len(doc.tables)):
+                if i == 1:
+                    for j in range(1, len(doc.tables[i].rows)):
+                        line = []
+                        for x in range(6):
+                            line.append(doc.tables[i].rows[j].cells[x].text)
+                        content.append(line)
+                else:
+                    for j in range(len(doc.tables[i].rows)):
+                        line = []
+                        for x in range(6):
+                            line.append(doc.tables[i].rows[j].cells[x].text)
+                        content.append(line)
+            for y in range(len(content)):
+                result[y] = content[y]
+        return result
 
-    def first_time(self):
-        '''Рассылка документа причастным'''
-        for name in newsletter:
-            for key, value in contacts.items():
-                if name == key:
-                    if os.path.isfile(filepath):
-                        ctype, encoding = mimetypes.guess_type(filepath)
-                        if ctype is None or encoding is not None:
-                            ctype = 'application/octet-stream'
-                        maintype, subtype = ctype.split('/', 1)
-                        if maintype == 'text':
-                            with open(filepath) as fp:
-                                file = MIMEText(fp.read(), _subtype=subtype)
-                                fp.close()
-                        elif maintype == 'image':
-                            with open(filepath, 'rb') as fp:
-                                file = MIMEImage(fp.read(), _subtype=subtype)
-                                fp.close()
-                        elif maintype == 'audio':
-                            with open(filepath, 'rb') as fp:
-                                file = MIMEAudio(fp.read(), _subtype=subtype)
-                                fp.close()
-                        else:
-                            with open(filepath, 'rb') as fp:
-                                file = MIMEBase(maintype, subtype)
-                                file.set_payload(fp.read())
-                                fp.close()
-                            encoders.encode_base64(file)
-                        file.add_header('Content-Disposition', 'attachment', filename=filename)
-                        msg.attach(file)
-                        msg['To'] = value
-                        server = smtplib.SMTP('smtp.gmail.com: 587')  # Создаем объект SMTP
-                        server.starttls()
-                        server.login(msg['From'], password)
-                        server.sendmail(msg['From'], msg['To'], msg.as_string())
-                        server.quit()
-                    print(f'Файл {doc}, успешно отправлен на электронную почту {value}')
-#
-# '''Поиск по дате исполнения и повторная рассылка приорететных задач'''
-# for i in range(1, len(doc.tables)):
-#     for j in range(1, len(doc.tables[i].rows)):
-#         day = datetime.strptime(doc.tables[i].rows[j].cells[2].text, '%d.%m.%Y').date()
-#         date_today = date.today()
-#         new_date = date_today
-#         new_date1 = date_today + timedelta(days=3)
-#         new_date2 = date_today + timedelta(days=1)
-#         if day == new_date1:
-#             plan = []
-#             for text in range(5):
-#                 plan.append(doc.tables[i].rows[j].cells[text].text)
-#             for key, value in contacts.items():
-#                 if plan[3] == key:
-#                     msg['To'] = value
-#                     msg.attach(MIMEText(' / '.join(plan)))
-#                     server = smtplib.SMTP('smtp.gmail.com: 587')
-#                     server.starttls()
-#                     server.login(msg['From'], password)
-#                     server.sendmail(msg['From'], msg['To'], msg.as_string())
-#                     server.quit()
-#                     print(f'Отправить {plan} на почту {value}')
-#         elif day == new_date2:
-#             plan = []
-#             for text in range(5):
-#                 plan.append(doc.tables[i].rows[j].cells[text].text)
-#             for key, value in contacts.items():
-#                 if plan[3] == key:
-#                     msg['To'] = value
-#                     msg.attach(MIMEText(' / '.join(plan)))
-#                     server = smtplib.SMTP('smtp.gmail.com: 587')
-#                     server.starttls()
-#                     server.login(msg['From'], password)
-#                     server.sendmail(msg['From'], msg['To'], msg.as_string())
-#                     server.quit()
-#                     print(f'Отправить {plan} на почту {value}')
-#             for key, value in contacts.items():
-#                 if plan[4] == key:
-#                     msg['To'] = value
-#                     msg.attach(MIMEText(' / '.join(plan)))
-#                     server = smtplib.SMTP('smtp.gmail.com: 587')
-#                     server.starttls()
-#                     server.login(msg['From'], password)
-#                     server.sendmail(msg['From'], msg['To'], msg.as_string())
-#                     server.quit()
-#                     print(f'Отправить {plan} на почту {value}')
-#         elif day < new_date:
-#             plan = []
-#             for text in range(5):
-#                 plan.append(doc.tables[i].rows[j].cells[text].text)
-#             msg['To'] = contacts.get("Секретарь")
-#             msg.attach(MIMEText(' / '.join(plan)))
-#             server = smtplib.SMTP('smtp.gmail.com: 587')
-#             server.starttls()
-#             server.login(msg['From'], password)
-#             server.sendmail(msg['From'], msg['To'], msg.as_string())
-#             server.quit()
-#             print(f'Отправить {plan} на почту {contacts.get("Секретарь")}')
 
-a = SearchColumns()
-print(a.columns(3))
+class Sender:
+
+    def __init__(self, parser, smtp_host, smpt_port, smpt_password):
+        self.parser = parser
+        self.smtp_host = smtp_host
+        self.smtp_port = smpt_port
+        self.smtp_password = smpt_password
+
+    def send(self):
+        sends = set()
+        processed = self.parser.process()
+        for value in processed.values():
+            sends.add(value[3])
+            sends.add(value[4])
+        user = 'Skandinav_by@mail.ru'
+        recipients = list(sends)
+        text = 'For execution'
+        filepath = self.parser.filename
+        basename = os.path.basename(filepath)
+        filesize = os.path.getsize(filepath)
+        msg = MIMEMultipart()
+        msg['Subject'] = 'Events'
+        msg['From'] = 'Skandinav_by@mail.ru'
+        msg['To'] = ', '.join(recipients)
+        part_text = MIMEText(text, 'plain')
+        part_file = MIMEBase('application', 'octet-stream; name="{}"'.format(basename))
+        part_file.set_payload(open(filepath, "rb").read())
+        part_file.add_header('Content-Description', basename)
+        part_file.add_header('Content-Disposition', 'attachment; filename="{}"; size={}'.format(basename, filesize))
+        encoders.encode_base64(part_file)
+        msg.attach(part_text)
+        msg.attach(part_file)
+        mail = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
+        mail.login(user, self.smtp_password)
+        mail.sendmail(user, recipients, msg.as_string())
+        mail.quit()
+
+    def repeat(self):
+        '''Поиск по дате исполнения и повторная рассылка приорететных задач'''
+        processed = self.parser.process()
+        for value in processed.values():
+            day = datetime.strptime(value[2], '%d.%m.%Y').date()
+            date_today = date.today()
+            new_date = date_today
+            new_date1 = date_today + timedelta(days=3)
+            new_date2 = date_today + timedelta(days=1)
+            if day == new_date1:
+                for recipients in contacts.keys():
+                    if value[3] == recipients:
+                        user = 'Skandinav_by@mail.ru'
+                        text = f'Повторно напоминаем о выполнении пункта мероприятий {value}'
+                        msg = MIMEMultipart()
+                        msg['Subject'] = 'Events'
+                        msg['From'] = 'Skandinav_by@mail.ru'
+                        msg['To'] = contacts.get(recipients)
+                        part_text = MIMEText(text, 'plain')
+                        msg.attach(part_text)
+                        mail = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
+                        mail.login(user, self.smtp_password)
+                        mail.sendmail(user, recipients, msg.as_string())
+                        mail.quit()
+                    elif day == new_date2:
+                        if value[3] == recipients:
+                                user = 'Skandinav_by@mail.ru'
+                                text = f'Повторно напоминаем о выполнении пункта мероприятий {value}'
+                                msg = MIMEMultipart()
+                                msg['Subject'] = 'Events'
+                                msg['From'] = 'Skandinav_by@mail.ru'
+                                msg['To'] = contacts.get(recipients)
+                                part_text = MIMEText(text, 'plain')
+                                msg.attach(part_text)
+                                mail = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
+                                mail.login(user, self.smtp_password)
+                                mail.sendmail(user, recipients, msg.as_string())
+                                mail.quit()
+                        if value[4] == recipients:
+                                user = 'Skandinav_by@mail.ru'
+                                text = f'Повторно напоминаем о выполнении пункта мероприятий {value}'
+                                msg = MIMEMultipart()
+                                msg['Subject'] = 'Events'
+                                msg['From'] = 'Skandinav_by@mail.ru'
+                                msg['To'] = contacts.get(recipients)
+                                part_text = MIMEText(text, 'plain')
+                                msg.attach(part_text)
+                                mail = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
+                                mail.login(user, self.smtp_password)
+                                mail.sendmail(user, recipients, msg.as_string())
+                                mail.quit()
+                    elif day < new_date:
+                        user = 'Skandinav_by@mail.ru'
+                        text = f'Не были выполнены данные мероприятия {value}'
+                        msg = MIMEMultipart()
+                        msg['Subject'] = 'Events'
+                        msg['From'] = 'Skandinav_by@mail.ru'
+                        msg['To'] = contacts.get("Секретарь")
+                        part_text = MIMEText(text, 'plain')
+                        msg.attach(part_text)
+                        mail = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
+                        mail.login(user, self.smtp_password)
+                        mail.sendmail(user, recipients, msg.as_string())
+                        mail.quit()
+
+
+
+
+parser = Parser('events.docx')
+# print(parser.process())
+sender = Sender(parser, 'smtp.mail.ru', 25, 'password???')
+
+sender.send()
+sender.repeat()
 
